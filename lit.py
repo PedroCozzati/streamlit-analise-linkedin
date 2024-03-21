@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import sqlite3
-import matplotlib.pyplot as plt
 import altair as alt
 
 
