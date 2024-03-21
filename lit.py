@@ -1,9 +1,18 @@
 from collections import Counter
-import re
 import streamlit as st
 import pandas as pd
 import numpy as np
 import sqlite3
+import matplotlib.pyplot as plt
+import altair as alt
+
+
+st.set_page_config(
+    page_title="Análise de dados de vagas do linkedin",  # Title of your app
+    page_icon=":chart_with_upwards_trend:",  # Icon for your app
+    layout="wide",  # Layout mode ("wide" or "centered")
+    # initial_sidebar_state="expanded",  # Initial state of the sidebar ("expanded" or "collapsed")
+)
 
 conn = sqlite3.connect('dados_analitico.db')
 
@@ -17,9 +26,9 @@ dados = pd.read_sql_query(query, conn)
 conn.close()
 
 dados_nao_nulos = dados
+dados_nao_nulos=dados_nao_nulos.drop_duplicates(subset='job_id')
 
 df = dados_nao_nulos[dados_nao_nulos.requisitos != 'Não especificado']
-
 
 # # Explodir a coluna 'tecnologia'
 df = df.assign(requisitos=df['requisitos'].str.split(', ')).explode('requisitos')
@@ -28,73 +37,90 @@ df = df.assign(requisitos=df['requisitos'].str.split(', ')).explode('requisitos'
 count_tecnologia = df['requisitos'].value_counts()
 df_temp = dados_nao_nulos[dados_nao_nulos.requisitos!="Não especificado"]
 
-regex_str_posicao = 'Estagiário|Estagiario|Junior|Júnior|JR|Nivel 1|Nivel I|Nível 1|Nível I|Pleno/Sênior|Senior|Sênior|SR|Pleno|Tech Lead|Tech-lead|Diretor|Coordenador|Gerente'
-#Buscar posicao no titulo da vaga
-def busca_posicao(title):
-    tecnologia =''
-    if re.findall(regex_str_posicao, title,re.IGNORECASE) != []:
-        tecnologia = re.findall(regex_str_posicao, title,re.IGNORECASE)[0].upper().replace(" ","").replace("-","")
-    else: 
-        tecnologia = "Não especificado"
-        
-    return tecnologia 
 
-def busca_posicao_detalhe(title):
-    tecnologia = ''
-    tecnologias_encontradas = re.findall(regex_str_posicao, title, re.IGNORECASE)
-    
-    if tecnologias_encontradas:
-        # Conta a frequência das tecnologias encontradas
-        contador = Counter(tecnologias_encontradas)
-        
-        # Escolhe a tecnologia mais frequente
-        tecnologia_mais_frequente = contador.most_common(1)[0][0].upper().replace(" ","").replace("-","")
-        
-        tecnologia = tecnologia_mais_frequente
-    else: 
-        tecnologia = "Não especificado"
-        
-    return tecnologia
+value_counts_df = df.requisitos.value_counts().reset_index()
+value_counts_df.columns = ['requisitos', 'count']  # Rename columns for clarity
 
-def busca_posicao_descricao(title):
-    tecnologia = ''
-    tecnologias_encontradas = re.findall(regex_str_posicao, title, re.IGNORECASE)
-    
-    if tecnologias_encontradas:
-        # Conta a frequência das tecnologias encontradas
-        contador = Counter(tecnologias_encontradas)
-        
-        # Escolhe a tecnologia mais frequente
-        tecnologia_mais_frequente = contador.most_common(1)[0][0].upper().replace(" ","").replace("-","")
-        
-        tecnologia = tecnologia_mais_frequente
-    else: 
-        tecnologia = "Não especificado"
-        
-    return tecnologia
+st.title('Análise de dados de vagas do Linkedin')
+
+st.subheader('Dataframe')
+st.dataframe(dados_nao_nulos)
+# Create the Altair chart
+c = alt.Chart(data=value_counts_df[:10]).mark_bar().encode(
+    x=alt.X('requisitos',sort=None),  # X-axis: the requisitos
+    y=alt.Y('count:Q'),  # Y-axis: the count of each requisitos
+    color='requisitos',  # Color the bars by the 'site' column
+    order=alt.Order(
+        # Sort the segments of the bars by this field
+        'count',
+        sort='descending'
+    )
+)
+
+st.divider()
+
+data_container = st.container()
+
+with data_container:
+    table, plot = st.columns((1, 3),gap='small')
+    with table:
+        st.dataframe(value_counts_df)
+    with plot:
+        st.subheader('TOP 10 Tecnologias mais pedidas')
+        st.altair_chart(c, use_container_width=True)
+
+# Render the chart using Streamlit
+
+value_counts_df2 = dados_nao_nulos.posicao.value_counts().reset_index()
+value_counts_df2.columns = ['posicao', 'count']  
+
+# Create the Altair chart
+d = alt.Chart(data=value_counts_df2).mark_bar().encode(
+    x=alt.X('posicao',sort=None),  # X-axis: the requisitos
+    y=alt.Y('count:Q'),  # Y-axis: the count of each requisitos
+    color='posicao',  # Color the bars by the 'site' column
+    order=alt.Order(
+        # Sort the segments of the bars by this field
+        'count',
+        sort='descending'
+    )
+)
+
+st.divider()
+
+data_container = st.container()
+
+with data_container:
+    table, plot = st.columns((1, 3),gap='small')
+    with table:
+        st.dataframe(value_counts_df2)
+    with plot:
+        st.subheader('Posições mais frequentes nas vagas')
+        st.altair_chart(d, use_container_width=True)
 
 
-dados_nao_nulos.drop_duplicates(subset='job_id')
+value_counts_df3 = dados_nao_nulos.company.value_counts().reset_index()
+value_counts_df3.columns = ['company', 'count']  
 
-dados_nao_nulos['posicao'] = dados_nao_nulos.title.apply(lambda x: busca_posicao(x))
+# Create the Altair chart
+e = alt.Chart(data=value_counts_df3[:5]).mark_arc().encode(
+    theta='count',
+    color='company',  # Color the bars by the 'site' column
+    order=alt.Order(
+        # Sort the segments of the bars by this field
+        'count',
+        sort='descending'
+    )
+)
 
+st.divider()
 
-dados_nao_nulos.loc[dados_nao_nulos['posicao']=='Não especificado','posicao']=dados_nao_nulos.experience_level.apply(lambda x: busca_posicao_detalhe(x))
+data_container = st.container()
 
-
-dados_nao_nulos.loc[dados_nao_nulos['posicao']=='Não especificado','posicao']=dados_nao_nulos.description.apply(lambda x: busca_posicao_descricao(x))
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['SR', 'SENIOR']),'posicao']="SÊNIOR"
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['JR']),'posicao']="JUNIOR"
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['JÚNIOR']),'posicao']="JUNIOR"
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['NÍVELI','NÍVEL1']),'posicao']="JUNIOR"
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['TECH LEAD,TECH-LEAD']),'posicao']="TECH-LEAD"
-dados_nao_nulos.loc[dados_nao_nulos['posicao'].isin(['ESTAGIÁRIO']),'posicao']="ESTAGIARIO"
-
-
-st.title('TOP 10 Tecnologias mais pedidas')
-
-st.bar_chart(data=df.requisitos.value_counts()[:10])
-
-st.title('Posições em vagas')
-
-st.bar_chart(data=dados_nao_nulos.posicao.value_counts())
+with data_container:
+    table, plot = st.columns((1, 3),gap='small')
+    with table:
+        st.dataframe(value_counts_df3)
+    with plot:
+        st.subheader('Empresas ou contratantes mais presentes')
+        st.altair_chart(e, use_container_width=True)
