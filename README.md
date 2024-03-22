@@ -37,7 +37,7 @@ Para esse processo, foi utilizada a lib PYGithub, que permite criar commits e pu
 Links 
 
 ```bash
-  Relatório Streamlit: https://relatorios-vagas.streamlit.app/?utm_medium=oembed
+  Relatório Streamlit: https://relatorio-linkedin-vagas.streamlit.app/
 ```
 
 
