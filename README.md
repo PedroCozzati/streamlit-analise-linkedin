@@ -73,8 +73,8 @@ Python, SQL, Pandas, Streamlit, SQLITE
 
 ## Screenshots
 
-Visualização Mobile
+Visualização Mobile <br>
 ![image](https://github.com/PedroCozzati/streamlit-analise-linkedin/assets/80106385/e025ee93-6b18-432d-acbe-15616ef774f2)
 
-Visualização no PC
+Visualização no PC <br>
 ![image](https://github.com/PedroCozzati/streamlit-analise-linkedin/assets/80106385/e4ad9dc4-58c8-4f57-8c0c-f4f3a3854643)
